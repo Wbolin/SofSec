@@ -12,7 +12,10 @@ ASSIGN
   esac;
 
   FAIRNESS
-    state = entering;
+    state = entering
+
+  FAIRNESS
+    state = exiting
 
 MODULE main
 VAR
@@ -34,3 +37,33 @@ ASSIGN
 SPEC AG !(proc1.state = critical & proc2.state = critical); -- safety
 
 SPEC AG (proc1.state = entering -> AF proc1.state = critical); -- liveness
+
+---- specification AG !(proc1.state = critical & proc2.state = critical)  is true
+---- specification AG (proc1.state = entering -> AF proc1.state = critical)  is false
+---- as demonstrated by the following execution sequence
+--Trace Description: CTL Counterexample 
+--Trace Type: Counterexample 
+---> State: 1.1 <-
+--  semaphore = FALSE
+--  pid = 0
+--  proc1.state = idle
+--  proc2.state = idle
+---> State: 1.2 <-
+--  proc1.state = entering
+---> State: 1.3 <-
+--  pid = 1
+--  proc2.state = entering
+---- Loop starts here
+---> State: 1.4 <-
+--  semaphore = TRUE
+--  proc2.state = critical
+---> State: 1.5 <-
+--  proc2.state = exiting
+---> State: 1.6 <-
+--  semaphore = FALSE
+--  proc2.state = idle
+---> State: 1.7 <-
+--  proc2.state = entering
+---> State: 1.8 <-
+--  semaphore = TRUE
+--  proc2.state = critical
