@@ -7,7 +7,7 @@ VAR
   acc_payment: boolean;
   state:   { ready, expect_payment, dispense_item };
   n_items: 0..max_items;
-
+  y : 0..max_items;
 ASSIGN
 
   init (state) := ready;
@@ -24,7 +24,8 @@ ASSIGN
         state = dispense_item & n_items > 0: n_items - 1;
         TRUE: n_items;
   esac;
-
+  init(y):= max_items;
+  next(y):= n_items;
   init (acc_payment) := FALSE;
   next (acc_payment) := (state = expect_payment & payment & choice & n_items > 0); --added "& choice"
 
@@ -41,7 +42,8 @@ LTLSPEC
 LTLSPEC
   G(!(acc_payment&n_items=0));
 
-
+LTLSPEC
+  G(state=dispense_item -> X(n_items = y - 1));
 --Trace Description: LTL Counterexample 
 --Trace Type: Counterexample 
 --  -> State: 1.1 <-		
