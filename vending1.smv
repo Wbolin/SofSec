@@ -6,8 +6,14 @@ VAR
   payment: boolean;
   acc_payment: boolean;
   state:   { ready, expect_payment, dispense_item };
+
+  -- Keeps track of how many items there are left in the vending machine
   n_items: 0..max_items;
+
+  -- Dummy variable, used in checking that once an item is dispensed, n_items
+  -- is reduced by 1.
   y : 0..max_items;
+
 ASSIGN
 
   init (state) := ready;
@@ -15,36 +21,43 @@ ASSIGN
 		    state = ready          & choice:  expect_payment;
 		    state = expect_payment & acc_payment: dispense_item;
 		    state = expect_payment & !choice: ready;
-		    state = dispense_item:	      ready;
-		    TRUE:                             state;
+		    state = dispense_item : ready;
+		    TRUE: state;
   esac;
 
   init (n_items) := max_items;
   next(n_items) := case
+        -- Reduces n_items by one.
         state = dispense_item & n_items > 0: n_items - 1;
         TRUE: n_items;
   esac;
 
-  init(y):= max_items;
+  -- y is always equal to what n_items was in the last step.
+  init(y):= n_items;
   next(y):= n_items;
 
   init (acc_payment) := FALSE;
-  next (acc_payment) := (state = expect_payment & payment & choice & n_items > 0); --added "& choice"
+  -- added "& choice & n_items > 0"
+  next (acc_payment) := (state = expect_payment & payment & choice & n_items > 0);
 
 DEFINE
   release_item := (state = dispense_item);
   max_items := 5;
 
 LTLSPEC
+  -- "if payment completes, eventually the item will be released"
   G(acc_payment -> F release_item);
 
 LTLSPEC
+  -- "there are never a negative amount of items left"
   G(n_items >= 0);
 
 LTLSPEC
+  -- "never accepts payments if the machine is empty"
   G(!(acc_payment&n_items=0));
 
 LTLSPEC
+  -- "if item is dispensed, n_items is reduced to y-1" & "if previous state was not dispense_item, n_items and y are equal"
   G(state=dispense_item -> X(n_items = y - 1) & !(Y(state = dispense_item)) -> n_items = y);
 
 
