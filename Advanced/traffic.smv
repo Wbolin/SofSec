@@ -1,4 +1,4 @@
-MODULE trafficLight(signal)
+MODULE trafficLight(signal, car_in_box)
 VAR
 	--state : {green, yellow, red};
 	red : boolean;
@@ -17,7 +17,7 @@ ASSIGN
 	init(yellow) := FALSE;
 	next(yellow) := case
 		red & yellow : FALSE;
-		signal & red : TRUE;
+		signal & red & !car_in_box: TRUE;
 		yellow : FALSE;
 		!signal & green : TRUE;
 		TRUE : yellow;
@@ -33,47 +33,95 @@ ASSIGN
 DEFINE
 	red_and_yellow := red & yellow;
 
-MODULE main
+MODULE sensor(light)
 VAR
-	signal : array 0..1 of boolean;
-	sensor : array 0..1 of boolean;
-	timer : 0..max_green_time;
-
-	light1 : trafficLight(signal[0]);
-	light2 : trafficLight(signal[1]);
+	on : boolean;
+	queue : 0..max_queue;
 
 ASSIGN
+	init (queue) := 0;
+	next (queue) := case
+		queue = 0 : {1, 0};
+		(light.green | !light.red & light.yellow) & queue > 0 & queue < max_queue: {queue - 1, queue, queue + 1};
+		light.red & queue < max_queue : {queue + 1, queue};
+		TRUE : queue;
+	esac;
+
+	--init (on) := queue > 0;
+	--next (on) := queue > 0;
+
+
+DEFINE
+	max_queue := 5;
+
+MODULE main
+VAR
+	signal : array 1..3 of boolean;
+	--sensor : array 1..3 of 0..5;
+	timer : 0..max_green_time;
+	car_in_box : boolean;
+
+	light1 : trafficLight(signal[1], car_in_box);
+	sensor1 : sensor(light1);
+
+	light2 : trafficLight(signal[2], car_in_box);
+	sensor2 : sensor(light2);
+
+	light3 : trafficLight(signal[3], car_in_box);
+	sensor3 : sensor(light3);
+
+ASSIGN
+
+	init (car_in_box) := FALSE;
+	next (car_in_box) := case
+		light1.green & sensor1.queue > 0 : TRUE;
+		light2.green & sensor2.queue > 0 : TRUE;
+		light3.green & sensor3.queue > 0 : TRUE;
+		TRUE : FALSE;
+	esac;
+
 	init (timer) := max_green_time;
 	next (timer) := case
-		(light1.green | light2.green )& timer > 0 : timer - 1;
-		!light1.green & !light2.green : max_green_time;
+		(light1.green | light2.green | light3.green) & timer > 0 : timer - 1;
+		!light1.green & !light2.green & !light3.green : max_green_time;
 		TRUE : timer;
 	esac;
 
-	init (signal[0]) := FALSE;
-	next (signal[0]) := case
-		light1.green & timer = 0 : FALSE;
-		light2.green & timer = 0 & light1.red: TRUE;
-		TRUE: FALSE;
+	init (signal[1]) := TRUE;
+	next (signal[1]) := case
+		light1.green & timer = 0 & (sensor2.queue > 0 | sensor3.queue > 0): FALSE;
+		!light3.red & light3.yellow & light1.red & sensor1.queue > 0 : TRUE;
+		!light2.red & light2.yellow & light1.red & !(sensor3.queue > 0) & sensor1.queue > 0: TRUE;
+		TRUE: signal[1];
 	esac;
 
 
-	init (signal[1]) := FALSE;
-	next (signal[1]) := case	
-		light2.green & timer = 0: FALSE;
-		light1.green & timer = 0 & light2.red: TRUE;
-		TRUE : FALSE;
+	init (signal[2]) := FALSE;
+	next (signal[2]) := case	
+		light2.green & timer = 0 & (sensor1.queue > 0| sensor3.queue > 0) : FALSE;
+		!light1.red & light1.yellow & light2.red & sensor2.queue > 0 : TRUE;
+		!light3.red & light3.yellow & light2.red & !(sensor1.queue > 0) & sensor2.queue > 0: TRUE;
+		TRUE : signal[2];
+	esac;
+
+	init (signal[3]) := FALSE;
+	next (signal[3]) := case
+		light3.green & timer = 0 & (sensor1.queue > 0 | sensor2.queue > 0) : FALSE;
+		!light2.red & light2.yellow & light3.red & sensor3.queue > 0 : TRUE;
+		!light1.red & light1.yellow & light3.red & !(sensor2.queue > 0) & sensor3.queue > 0 : TRUE;
+		TRUE : signal[3];
 	esac;
 
 DEFINE
 	max_green_time := 3;
 
 
-LTLSPEC
-	G(!light1.green & !light2.green);
 
-LTLSPEC
-	G(!light1.yellow & !light2.yellow);
+--LTLSPEC
+	--G(!light1.green & !light2.green);
+
+--LTLSPEC
+	--G(!light1.yellow & !light2.yellow);
 
 LTLSPEC
 	G(light1.green | light1.yellow -> light2.red )
@@ -95,13 +143,28 @@ CTLSPEC
 	AG(light1.green -> EF (light1.yellow));
 
 LTLSPEC
-	G(light1.green & !signal[0] -> X(light1.yellow));
+	G(light1.green & !signal[1] -> X(light1.yellow));
 
 LTLSPEC
 	G(light1.yellow & !light1.red -> X(light1.red & !light1.yellow));
 
+--LTLSPEC
+	--G!(light1.green | light2.green)
+
 LTLSPEC
-	G!(light1.green | light2.green) 
+	G(count(!light1.red, !light2.red, !light3.red)<=1)
+
+LTLSPEC
+	G(sensor1.queue > 0 & light1.red -> F(light1.green))
+
+LTLSPEC
+	G(sensor2.queue > 0 & light2.red -> F(light2.green))
+
+LTLSPEC
+	G(sensor3.queue > 0 & light3.red -> F(light3.green))
+
+LTLSPEC
+	!G !(sensor1.queue > 0 & light1.red)
 
 
 
