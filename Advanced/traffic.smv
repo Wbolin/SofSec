@@ -5,6 +5,7 @@ VAR
 	yellow : boolean;
 	green : boolean;
 
+
 ASSIGN
 	init(red) := TRUE;
 	next(red) := case
@@ -33,11 +34,19 @@ ASSIGN
 DEFINE
 	--red_and_yellow := red & yellow;
 
+-- If light is yellow and not red, it should become red
+LTLSPEC
+	G(yellow & !red -> X(red))
+
+-- If light is yellow and red, it should become green
+LTLSPEC
+	G(yellow & red -> X(green))
+
 MODULE sensor(light)
 VAR
 	--on : boolean;
 	queue : 0..max_queue;
-	queueCheck : 0..max_queue;
+	--queueCheck : 0..max_queue;
 
 ASSIGN
 	init (queue) := 0;
@@ -49,8 +58,8 @@ ASSIGN
 		TRUE : queue;
 	esac;
 
-	init (queueCheck) := 0;
-	next (queueCheck) := queue;
+	--init (queueCheck) := 0;
+	--next (queueCheck) := queue;
 
 	--init (on) := queue > 0;
 	--next (on) := queue > 0;
@@ -94,7 +103,7 @@ ASSIGN
 
 	init (signal[1]) := TRUE;
 	next (signal[1]) := case
-		light1.green & timer = 0 & (sensor2.queue > 0 | sensor3.queue > 0): FALSE;
+		light1.green & next(timer) = 0 & (sensor2.queue > 0 | sensor3.queue > 0): FALSE;
 		!light3.red & light3.yellow & light1.red & sensor1.queue > 0 : TRUE;
 		!light2.red & light2.yellow & light1.red & !(sensor3.queue > 0) & sensor1.queue > 0: TRUE;
 		TRUE: signal[1];
@@ -103,7 +112,7 @@ ASSIGN
 
 	init (signal[2]) := FALSE;
 	next (signal[2]) := case	
-		light2.green & timer = 0 & (sensor1.queue > 0| sensor3.queue > 0) : FALSE;
+		light2.green & next(timer) = 0 & (sensor1.queue > 0| sensor3.queue > 0) : FALSE;
 		!light1.red & light1.yellow & light2.red & sensor2.queue > 0 : TRUE;
 		!light3.red & light3.yellow & light2.red & !(sensor1.queue > 0) & sensor2.queue > 0: TRUE;
 		TRUE : signal[2];
@@ -111,7 +120,7 @@ ASSIGN
 
 	init (signal[3]) := FALSE;
 	next (signal[3]) := case
-		light3.green & timer = 0 & (sensor1.queue > 0 | sensor2.queue > 0) : FALSE;
+		light3.green & next(timer) = 0 & (sensor1.queue > 0 | sensor2.queue > 0) : FALSE;
 		!light2.red & light2.yellow & light3.red & sensor3.queue > 0 : TRUE;
 		!light1.red & light1.yellow & light3.red & !(sensor2.queue > 0) & sensor3.queue > 0 : TRUE;
 		TRUE : signal[3];
@@ -119,6 +128,14 @@ ASSIGN
 
 DEFINE
 	max_green_time := 3;
+	not_all_red := count(!light1.red, !light2.red, !light3.red)>0;
+	all_red := count(light1.red, light2.red, light3.red) = 3;
+	num_of_not_red := count(!light1.red, !light2.red, !light3.red);
+	others_waiting := (light1.green & (sensor2.queue > 0 | sensor3.queue > 0)) | (light2.green & (sensor1.queue > 0 | sensor3.queue > 0)) | (light3.green & (sensor1.queue > 0 | sensor2.queue > 0));
+	one_green := count(light1.green, light2.green, light3.green) = 1;
+
+FAIRNESS
+	others_waiting;
 
 
 
@@ -156,9 +173,11 @@ LTLSPEC
 --LTLSPEC
 	--G!(light1.green | light2.green)
 
+-- At most one traffic light is not red
 LTLSPEC
-	G(count(!light1.red, !light2.red, !light3.red)<=1)
+	G(num_of_not_red<=1)
 
+-- Eventually, waiting drivers will get a green light
 LTLSPEC
 	G(sensor1.queue > 0 & light1.red -> F(light1.green))
 
@@ -171,13 +190,35 @@ LTLSPEC
 --LTLSPEC
 	--!G !(sensor1.queue > 0 & light1.red)
 
+--LTLSPEC
+	--G !(sensor3.queue > sensor3.queueCheck + 1)
+
+-- Between green lights, all light have to be red for at least one turn
 LTLSPEC
-	G !(sensor3.queue > sensor3.queueCheck + 1)
+	G ((light1.yellow & !light1.red) | (light2.yellow & !light2.red) | (light3.yellow & !light3.red) -> X(light1.red & light2.red & light3.red))
 
+-- lol (same v)
+LTLSPEC
+	G (not_all_red & num_of_not_red = 1 -> X(all_red) | X(num_of_not_red = 1))
 
+-- Every time a light goes back to red, there is a turn where all lights are red
+LTLSPEC
+	G(not_all_red -> X(all_red) | X(not_all_red))
 
+-- If timer is 0 and people were already waiting at the other lights, the current green light swithces to red in 2 turns.
+LTLSPEC
+	G((timer = 0 & Y(others_waiting)) -> X(X(all_red)))
 
+--
+LTLSPEC
+	G(!others_waiting & one_green -> X(one_green))
 
+-- If green, then eventually it will either become red or the timer will be 0 (until others are waiting)
+LTLSPEC
+	G (light1.green -> F(timer = 0 U others_waiting) | F(light1.red))
+
+--CTLSPEC
+--	AG (light1.green -> EF (light1.red) & EF AG(timer = 0))
 
 
 
