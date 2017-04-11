@@ -43,7 +43,8 @@ ASSIGN
 	init (queue) := 0;
 	next (queue) := case
 		queue = 0 : {1, 0};
-		(light.green | (!light.red & light.yellow)) & queue > 0 & queue < max_queue: {queue - 1, queue, queue + 1};
+		(light.green | (!light.red & light.yellow)) & queue > 0 & queue < max_queue : {queue - 1, queue, queue + 1};
+		(light.green | (!light.red & light.yellow)) & queue > 0 : {queue - 1, queue};
 		light.red & queue < max_queue : {queue + 1, queue};
 		TRUE : queue;
 	esac;
