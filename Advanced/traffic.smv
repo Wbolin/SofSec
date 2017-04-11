@@ -31,21 +31,25 @@ ASSIGN
 	esac;
 
 DEFINE
-	red_and_yellow := red & yellow;
+	--red_and_yellow := red & yellow;
 
 MODULE sensor(light)
 VAR
-	on : boolean;
+	--on : boolean;
 	queue : 0..max_queue;
+	queueCheck : 0..max_queue;
 
 ASSIGN
 	init (queue) := 0;
 	next (queue) := case
 		queue = 0 : {1, 0};
-		(light.green | !light.red & light.yellow) & queue > 0 & queue < max_queue: {queue - 1, queue, queue + 1};
+		(light.green | (!light.red & light.yellow)) & queue > 0 & queue < max_queue: {queue - 1, queue, queue + 1};
 		light.red & queue < max_queue : {queue + 1, queue};
 		TRUE : queue;
 	esac;
+
+	init (queueCheck) := 0;
+	next (queueCheck) := queue;
 
 	--init (on) := queue > 0;
 	--next (on) := queue > 0;
@@ -74,9 +78,9 @@ ASSIGN
 
 	init (car_in_box) := FALSE;
 	next (car_in_box) := case
-		light1.green & sensor1.queue > 0 : TRUE;
-		light2.green & sensor2.queue > 0 : TRUE;
-		light3.green & sensor3.queue > 0 : TRUE;
+		(light1.green | (!light1.red & light1.yellow)) & sensor1.queue > 0 : TRUE;
+		(light2.green | (!light2.red & light2.yellow)) & sensor2.queue > 0 : TRUE;
+		(light3.green | (!light3.red & light3.yellow)) & sensor3.queue > 0 : TRUE;
 		TRUE : FALSE;
 	esac;
 
@@ -163,8 +167,12 @@ LTLSPEC
 LTLSPEC
 	G(sensor3.queue > 0 & light3.red -> F(light3.green))
 
+--LTLSPEC
+	--!G !(sensor1.queue > 0 & light1.red)
+
 LTLSPEC
-	!G !(sensor1.queue > 0 & light1.red)
+	G !(sensor3.queue > sensor3.queueCheck + 1)
+
 
 
 
