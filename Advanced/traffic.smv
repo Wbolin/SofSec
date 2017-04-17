@@ -138,13 +138,6 @@ FAIRNESS
 	others_waiting;
 
 
-
---LTLSPEC
-	--G(!light1.green & !light2.green);
-
---LTLSPEC
-	--G(!light1.yellow & !light2.yellow);
-
 LTLSPEC
 	G(light1.green | light1.yellow -> light2.red )
 LTLSPEC
@@ -170,9 +163,6 @@ LTLSPEC
 LTLSPEC
 	G(light1.yellow & !light1.red -> X(light1.red & !light1.yellow));
 
---LTLSPEC
-	--G!(light1.green | light2.green)
-
 -- At most one traffic light is not red
 LTLSPEC
 	G(num_of_not_red<=1)
@@ -187,17 +177,11 @@ LTLSPEC
 LTLSPEC
 	G(sensor3.queue > 0 & light3.red -> F(light3.green))
 
---LTLSPEC
-	--!G !(sensor1.queue > 0 & light1.red)
-
---LTLSPEC
-	--G !(sensor3.queue > sensor3.queueCheck + 1)
-
 -- Between green lights, all light have to be red for at least one turn
 LTLSPEC
 	G ((light1.yellow & !light1.red) | (light2.yellow & !light2.red) | (light3.yellow & !light3.red) -> X(light1.red & light2.red & light3.red))
 
--- lol (same v)
+-- (same v)
 LTLSPEC
 	G (not_all_red & num_of_not_red = 1 -> X(all_red) | X(num_of_not_red = 1))
 
@@ -217,8 +201,7 @@ LTLSPEC
 LTLSPEC
 	G (light1.green -> F(timer = 0 U others_waiting) | F(light1.red))
 
---CTLSPEC
---	AG (light1.green -> EF (light1.red) & EF AG(timer = 0))
+-- MORE LTL-/CTL-SPECS TO BE ADDED!
 
 
 
