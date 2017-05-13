@@ -40,7 +40,7 @@ LTLSPEC
 
 -- If light is yellow and red, it should become green
 LTLSPEC
-	G(yellow & red -> X(green))
+	G(yellow -> X(green))
 
 -- Green and red or green and yellow are never on at the same time
 LTLSPEC
@@ -74,7 +74,7 @@ ASSIGN
 	esac;
 
 FAIRNESS
-	queue > 0; -- Each queue is populated infinitely often
+	queue > 0;
 
 -- If there are cars waiting at a red light, they will eventually get a green light
 LTLSPEC
@@ -86,7 +86,7 @@ VAR
 	--signal variable signals to trafficlight to allow transition to green.
 	signal : array 1..3 of boolean;
 	
-	--keeps track of max allowed green time
+	--keeps track of green time
 	timer : 0..max_green_time;
 
 	--if a car is in the middle of the intersection
@@ -188,6 +188,1096 @@ LTLSPEC
 -- Our LTL-/CTL-SPECS should fullfill all criterion
 
 -- ERROR TRACES:
+
+
+--,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.
+--1. FAIRNESS PROPERTY FOR QUEUE REMOVED (mutated model, correct specs): 
+--It's possible cars never arrive at certain lights.
+--One light can stay green forever
+--     ,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*
+/--
+
+-- specification  G ((yellow & !red) ->  X (red & !yellow)) IN light1 is true
+-- specification  G ((yellow & red) ->  X green) IN light1 is true
+-- specification  G (!(green & red) | !(green & yellow)) IN light1 is true
+-- specification  G ((red & !yellow) -> ( X (red & yellow) |  X (red & !yellow))) IN light1 is true
+-- specification  G (green ->  F yellow) IN light1 is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 1.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 1.2 <-
+    light1.yellow = TRUE
+  -> State: 1.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor1.queue = 1
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.4 <-
+    timer = 2
+    car_in_box = TRUE
+  -> State: 1.5 <-
+    timer = 1
+  -- Loop starts here
+  -> State: 1.6 <-
+    timer = 0
+  -> State: 1.7 <-
+-- specification  G ((queue > 0 & light.red) ->  F light.green) IN sensor1 is true
+-- specification  G ((yellow & !red) ->  X (red & !yellow)) IN light2 is true
+-- specification  G ((yellow & red) ->  X green) IN light2 is true
+-- specification  G (!(green & red) | !(green & yellow)) IN light2 is true
+-- specification  G ((red & !yellow) -> ( X (red & yellow) |  X (red & !yellow))) IN light2 is true
+-- specification  G (green ->  F yellow) IN light2 is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 2.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 2.2 <-
+    light1.yellow = TRUE
+  -> State: 2.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.4 <-
+    timer = 2
+  -> State: 2.5 <-
+    timer = 1
+    sensor2.queue = 1
+    others_waiting = TRUE
+  -> State: 2.6 <-
+    signal[1] = FALSE
+    timer = 0
+  -> State: 2.7 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 2.8 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 2.9 <-
+    light2.yellow = TRUE
+  -> State: 2.10 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.11 <-
+    timer = 2
+    car_in_box = TRUE
+  -> State: 2.12 <-
+    timer = 1
+  -- Loop starts here
+  -> State: 2.13 <-
+    timer = 0
+  -> State: 2.14 <-
+-- specification  G ((queue > 0 & light.red) ->  F light.green) IN sensor2 is true
+-- specification  G ((yellow & !red) ->  X (red & !yellow)) IN light3 is true
+-- specification  G ((yellow & red) ->  X green) IN light3 is true
+-- specification  G (!(green & red) | !(green & yellow)) IN light3 is true
+-- specification  G ((red & !yellow) -> ( X (red & yellow) |  X (red & !yellow))) IN light3 is true
+-- specification  G (green ->  F yellow) IN light3 is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 3.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 3.2 <-
+    light1.yellow = TRUE
+  -> State: 3.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.4 <-
+    timer = 2
+  -> State: 3.5 <-
+    timer = 1
+    sensor3.queue = 1
+    others_waiting = TRUE
+  -> State: 3.6 <-
+    signal[1] = FALSE
+    timer = 0
+  -> State: 3.7 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 3.8 <-
+    signal[3] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 3.9 <-
+    light3.yellow = TRUE
+  -> State: 3.10 <-
+    light3.red = FALSE
+    light3.yellow = FALSE
+    light3.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.11 <-
+    timer = 2
+    car_in_box = TRUE
+  -> State: 3.12 <-
+    timer = 1
+  -- Loop starts here
+  -> State: 3.13 <-
+    timer = 0
+  -> State: 3.14 <-
+-- specification  G ((queue > 0 & light.red) ->  F light.green) IN sensor3 is true
+-- specification  G num_of_not_red <= 1  is true
+-- specification  G ((((light1.yellow & !light1.red) | (light2.yellow & !light2.red)) | (light3.yellow & !light3.red)) ->  X ((light1.red & light2.red) & light3.red))  is true
+-- specification  G (num_of_not_red = 1 -> ( X all_red |  X num_of_not_red = 1))  is true
+-- specification  G ((timer = 0 &  Y others_waiting) ->  X ( X all_red))  is true
+-- specification  G ((!others_waiting & one_green) ->  X one_green)  is true
+-- specification  G (light1.green -> ( F (timer = 0 U others_waiting) |  F light1.red))  is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 4.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 4.2 <-
+    light1.yellow = TRUE
+  -> State: 4.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor1.queue = 1
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 4.4 <-
+    timer = 2
+    car_in_box = TRUE
+  -> State: 4.5 <-
+    timer = 1
+  -- Loop starts here
+  -> State: 4.6 <-
+    timer = 0
+  -> State: 4.7 <-
+
+--/
+
+--,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.
+--2.Spec that green comes after yellow (rather than after r&y) (incorrect spec, correct model):
+--False when light transitions from yellow to red as per the model.
+--     ,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.,.-*'*-.
+/--
+
+-- specification  G ((yellow & !red) ->  X (red & !yellow)) IN light1 is true
+-- specification  G (yellow ->  X green) IN light1 is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 1.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 1.2 <-
+    light1.yellow = TRUE
+    sensor1.queue = 1
+  -> State: 1.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor2.queue = 1
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.4 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 1
+  -> State: 1.5 <-
+    timer = 1
+  -> State: 1.6 <-
+    signal[1] = FALSE
+    timer = 0
+    sensor1.queue = 2
+    sensor2.queue = 2
+    sensor3.queue = 2
+  -> State: 1.7 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    sensor1.queue = 3
+    sensor2.queue = 3
+    sensor3.queue = 3
+    others_waiting = FALSE
+    one_green = FALSE
+  -- Loop starts here
+  -> State: 1.8 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 1.9 <-
+    car_in_box = FALSE
+  -> State: 1.10 <-
+    light2.yellow = TRUE
+  -> State: 1.11 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.12 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor2.queue = 2
+  -> State: 1.13 <-
+    timer = 1
+    sensor2.queue = 1
+  -> State: 1.14 <-
+    signal[2] = FALSE
+    timer = 0
+    sensor2.queue = 0
+  -> State: 1.15 <-
+    car_in_box = FALSE
+    light2.yellow = TRUE
+    light2.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 1.16 <-
+    signal[3] = TRUE
+    timer = 3
+    light2.red = TRUE
+    light2.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 1.17 <-
+    light3.yellow = TRUE
+  -> State: 1.18 <-
+    light3.red = FALSE
+    light3.yellow = FALSE
+    light3.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.19 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 2
+  -> State: 1.20 <-
+    timer = 1
+    sensor3.queue = 1
+  -> State: 1.21 <-
+    signal[3] = FALSE
+    timer = 0
+    sensor3.queue = 0
+  -> State: 1.22 <-
+    car_in_box = FALSE
+    light3.yellow = TRUE
+    light3.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 1.23 <-
+    signal[1] = TRUE
+    timer = 3
+    light3.red = TRUE
+    light3.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 1.24 <-
+    light1.yellow = TRUE
+  -> State: 1.25 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.26 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor1.queue = 2
+  -> State: 1.27 <-
+    timer = 1
+    sensor1.queue = 1
+    sensor2.queue = 1
+    others_waiting = TRUE
+  -> State: 1.28 <-
+    signal[1] = FALSE
+    timer = 0
+  -> State: 1.29 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    sensor1.queue = 0
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 1.30 <-
+    signal[2] = TRUE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 1.31 <-
+    light2.yellow = TRUE
+  -> State: 1.32 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.33 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor2.queue = 0
+  -> State: 1.34 <-
+    timer = 1
+    car_in_box = FALSE
+    sensor1.queue = 1
+    others_waiting = TRUE
+  -> State: 1.35 <-
+    signal[2] = FALSE
+    timer = 0
+  -> State: 1.36 <-
+    light2.yellow = TRUE
+    light2.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 1.37 <-
+    signal[1] = TRUE
+    timer = 3
+    light2.red = TRUE
+    light2.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 1.38 <-
+    light1.yellow = TRUE
+    sensor1.queue = 2
+  -> State: 1.39 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor1.queue = 3
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 1.40 <-
+    timer = 2
+    car_in_box = TRUE
+  -> State: 1.41 <-
+    timer = 1
+    sensor2.queue = 1
+    others_waiting = TRUE
+  -> State: 1.42 <-
+    signal[1] = FALSE
+    timer = 0
+    sensor3.queue = 1
+  -> State: 1.43 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    sensor2.queue = 2
+    sensor3.queue = 2
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 1.44 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    sensor2.queue = 3
+    sensor3.queue = 3
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+-- specification  G (!(green & red) | !(green & yellow)) IN light1 is true
+-- specification  G ((red & !yellow) -> ( X (red & yellow) |  X (red & !yellow))) IN light1 is true
+-- specification  G (green ->  F yellow) IN light1 is true
+-- specification  G ((queue > 0 & light.red) ->  F light.green) IN sensor1 is true
+-- specification  G ((yellow & !red) ->  X (red & !yellow)) IN light2 is true
+-- specification  G (yellow ->  X green) IN light2 is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 2.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 2.2 <-
+    light1.yellow = TRUE
+    sensor1.queue = 1
+  -> State: 2.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor2.queue = 1
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.4 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 1
+  -> State: 2.5 <-
+    timer = 1
+    sensor1.queue = 0
+  -> State: 2.6 <-
+    signal[1] = FALSE
+    timer = 0
+    car_in_box = FALSE
+  -> State: 2.7 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 2.8 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 2.9 <-
+    light2.yellow = TRUE
+  -> State: 2.10 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.11 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor2.queue = 0
+  -> State: 2.12 <-
+    timer = 1
+    car_in_box = FALSE
+  -> State: 2.13 <-
+    signal[2] = FALSE
+    timer = 0
+    sensor2.queue = 1
+  -> State: 2.14 <-
+    car_in_box = TRUE
+    light2.yellow = TRUE
+    light2.green = FALSE
+    sensor2.queue = 0
+    others_waiting = FALSE
+    one_green = FALSE
+  -- Loop starts here
+  -> State: 2.15 <-
+    signal[3] = TRUE
+    timer = 3
+    car_in_box = FALSE
+    light2.red = TRUE
+    light2.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 2.16 <-
+    sensor1.queue = 1
+    light3.yellow = TRUE
+  -> State: 2.17 <-
+    sensor2.queue = 1
+    light3.red = FALSE
+    light3.yellow = FALSE
+    light3.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.18 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 0
+  -> State: 2.19 <-
+    timer = 1
+    car_in_box = FALSE
+  -> State: 2.20 <-
+    signal[3] = FALSE
+    timer = 0
+  -> State: 2.21 <-
+    light3.yellow = TRUE
+    light3.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 2.22 <-
+    signal[1] = TRUE
+    timer = 3
+    light3.red = TRUE
+    light3.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 2.23 <-
+    light1.yellow = TRUE
+  -> State: 2.24 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.25 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor1.queue = 0
+  -> State: 2.26 <-
+    timer = 1
+    car_in_box = FALSE
+  -> State: 2.27 <-
+    signal[1] = FALSE
+    timer = 0
+  -> State: 2.28 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 2.29 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 2.30 <-
+    light2.yellow = TRUE
+  -> State: 2.31 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.32 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor2.queue = 0
+  -> State: 2.33 <-
+    timer = 1
+    car_in_box = FALSE
+    sensor1.queue = 1
+    others_waiting = TRUE
+  -> State: 2.34 <-
+    signal[2] = FALSE
+    timer = 0
+    sensor2.queue = 1
+  -> State: 2.35 <-
+    car_in_box = TRUE
+    light2.yellow = TRUE
+    light2.green = FALSE
+    sensor2.queue = 0
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 2.36 <-
+    signal[1] = TRUE
+    timer = 3
+    car_in_box = FALSE
+    light2.red = TRUE
+    light2.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 2.37 <-
+    light1.yellow = TRUE
+  -> State: 2.38 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 2.39 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor1.queue = 0
+  -> State: 2.40 <-
+    timer = 1
+    car_in_box = FALSE
+    sensor3.queue = 1
+    others_waiting = TRUE
+  -> State: 2.41 <-
+    signal[1] = FALSE
+    timer = 0
+  -> State: 2.42 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 2.43 <-
+    signal[3] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+-- specification  G (!(green & red) | !(green & yellow)) IN light2 is true
+-- specification  G ((red & !yellow) -> ( X (red & yellow) |  X (red & !yellow))) IN light2 is true
+-- specification  G (green ->  F yellow) IN light2 is true
+-- specification  G ((queue > 0 & light.red) ->  F light.green) IN sensor2 is true
+-- specification  G ((yellow & !red) ->  X (red & !yellow)) IN light3 is true
+-- specification  G (yellow ->  X green) IN light3 is false
+-- as demonstrated by the following execution sequence
+Trace Description: LTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 3.1 <-
+    signal[1] = TRUE
+    signal[2] = FALSE
+    signal[3] = FALSE
+    timer = 3
+    car_in_box = FALSE
+    light1.red = TRUE
+    light1.yellow = FALSE
+    light1.green = FALSE
+    sensor1.queue = 0
+    light2.red = TRUE
+    light2.yellow = FALSE
+    light2.green = FALSE
+    sensor2.queue = 0
+    light3.red = TRUE
+    light3.yellow = FALSE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    num_of_not_red = 0
+    one_green = FALSE
+    all_red = TRUE
+    not_all_red = FALSE
+    max_green_time = 3
+    sensor1.max_queue = 5
+    sensor2.max_queue = 5
+    sensor3.max_queue = 5
+  -> State: 3.2 <-
+    light1.yellow = TRUE
+    sensor1.queue = 1
+  -> State: 3.3 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor2.queue = 1
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.4 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 1
+  -> State: 3.5 <-
+    timer = 1
+    sensor1.queue = 0
+  -> State: 3.6 <-
+    signal[1] = FALSE
+    timer = 0
+    car_in_box = FALSE
+  -> State: 3.7 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 3.8 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 3.9 <-
+    light2.yellow = TRUE
+  -> State: 3.10 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.11 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor2.queue = 0
+  -> State: 3.12 <-
+    timer = 1
+    car_in_box = FALSE
+  -> State: 3.13 <-
+    signal[2] = FALSE
+    timer = 0
+  -> State: 3.14 <-
+    light2.yellow = TRUE
+    light2.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 3.15 <-
+    signal[3] = TRUE
+    timer = 3
+    light2.red = TRUE
+    light2.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 3.16 <-
+    light3.yellow = TRUE
+  -> State: 3.17 <-
+    light3.red = FALSE
+    light3.yellow = FALSE
+    light3.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.18 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 0
+  -> State: 3.19 <-
+    timer = 1
+    car_in_box = FALSE
+    sensor1.queue = 1
+    others_waiting = TRUE
+  -> State: 3.20 <-
+    signal[3] = FALSE
+    timer = 0
+    sensor3.queue = 1
+  -> State: 3.21 <-
+    car_in_box = TRUE
+    light3.yellow = TRUE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    one_green = FALSE
+  -- Loop starts here
+  -> State: 3.22 <-
+    signal[1] = TRUE
+    timer = 3
+    car_in_box = FALSE
+    light3.red = TRUE
+    light3.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 3.23 <-
+    light1.yellow = TRUE
+    sensor2.queue = 1
+  -> State: 3.24 <-
+    light1.red = FALSE
+    light1.yellow = FALSE
+    light1.green = TRUE
+    sensor3.queue = 1
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.25 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor1.queue = 0
+  -> State: 3.26 <-
+    timer = 1
+    car_in_box = FALSE
+  -> State: 3.27 <-
+    signal[1] = FALSE
+    timer = 0
+  -> State: 3.28 <-
+    light1.yellow = TRUE
+    light1.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 3.29 <-
+    signal[2] = TRUE
+    timer = 3
+    light1.red = TRUE
+    light1.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 3.30 <-
+    light2.yellow = TRUE
+  -> State: 3.31 <-
+    light2.red = FALSE
+    light2.yellow = FALSE
+    light2.green = TRUE
+    others_waiting = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.32 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor2.queue = 0
+  -> State: 3.33 <-
+    timer = 1
+    car_in_box = FALSE
+  -> State: 3.34 <-
+    signal[2] = FALSE
+    timer = 0
+  -> State: 3.35 <-
+    light2.yellow = TRUE
+    light2.green = FALSE
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 3.36 <-
+    signal[3] = TRUE
+    timer = 3
+    light2.red = TRUE
+    light2.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+  -> State: 3.37 <-
+    light3.yellow = TRUE
+  -> State: 3.38 <-
+    light3.red = FALSE
+    light3.yellow = FALSE
+    light3.green = TRUE
+    num_of_not_red = 1
+    one_green = TRUE
+    all_red = FALSE
+    not_all_red = TRUE
+  -> State: 3.39 <-
+    timer = 2
+    car_in_box = TRUE
+    sensor3.queue = 0
+  -> State: 3.40 <-
+    timer = 1
+    car_in_box = FALSE
+    sensor1.queue = 1
+    others_waiting = TRUE
+  -> State: 3.41 <-
+    signal[3] = FALSE
+    timer = 0
+    sensor3.queue = 1
+  -> State: 3.42 <-
+    car_in_box = TRUE
+    light3.yellow = TRUE
+    light3.green = FALSE
+    sensor3.queue = 0
+    others_waiting = FALSE
+    one_green = FALSE
+  -> State: 3.43 <-
+    signal[1] = TRUE
+    timer = 3
+    car_in_box = FALSE
+    light3.red = TRUE
+    light3.yellow = FALSE
+    num_of_not_red = 0
+    all_red = TRUE
+    not_all_red = FALSE
+-- specification  G (!(green & red) | !(green & yellow)) IN light3 is true
+-- specification  G ((red & !yellow) -> ( X (red & yellow) |  X (red & !yellow))) IN light3 is true
+-- specification  G (green ->  F yellow) IN light3 is true
+-- specification  G ((queue > 0 & light.red) ->  F light.green) IN sensor3 is true
+-- specification  G num_of_not_red <= 1  is true
+-- specification  G ((((light1.yellow & !light1.red) | (light2.yellow & !light2.red)) | (light3.yellow & !light3.red)) ->  X ((light1.red & light2.red) & light3.red))  is true
+-- specification  G (num_of_not_red = 1 -> ( X all_red |  X num_of_not_red = 1))  is true
+-- specification  G ((timer = 0 &  Y others_waiting) ->  X ( X all_red))  is true
+-- specification  G ((!others_waiting & one_green) ->  X one_green)  is true
+-- specification  G (light1.green -> ( F (timer = 0 U others_waiting) |  F light1.red))  is true
+
+--/
+
+
 
 
 
