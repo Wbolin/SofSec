@@ -15,8 +15,8 @@ ASSIGN
 		yellow : TRUE;
 		TRUE : red;
 	esac;
-	--yellow after single green and signal for going red
 
+	--yellow after single green and signal for going red
 	init(yellow) := FALSE;
 	next(yellow) := case
 		red & yellow : FALSE;
@@ -25,6 +25,7 @@ ASSIGN
 		!signal & green : TRUE;
 		TRUE : yellow;
 	esac;
+
 	--green after red & yellow
 	init(green) := FALSE;
 	next(green) := case
@@ -33,16 +34,24 @@ ASSIGN
 		TRUE : green;
 	esac;
 
-DEFINE
-	--red_and_yellow := red & yellow;
-
--- If light is yellow and not red, it should become red
+-- If light is yellow and not red, it should become only red
 LTLSPEC
-	G(yellow & !red -> X(red))
+	G(yellow & !red -> X(red & !yellow))
 
 -- If light is yellow and red, it should become green
 LTLSPEC
 	G(yellow & red -> X(green))
+
+-- Green and red or green and yellow are never on at the same time
+LTLSPEC
+	G(!(green & red) | !(green & yellow))
+
+-- If the light is only red, it may turn red AND yellow or stay only red in the next step
+LTLSPEC
+	G(red & !yellow -> X(red & yellow) | X(red & !yellow))
+
+LTLSPEC
+	G(green -> F(yellow))
 
 MODULE sensor(light)
 
@@ -67,6 +76,10 @@ ASSIGN
 FAIRNESS
 	queue > 0; -- Each queue is populated infinitely often
 
+-- If there are cars waiting at a red light, they will eventually get a green light
+LTLSPEC
+	G(queue > 0 & light.red -> F(light.green))
+
 
 MODULE main
 VAR
@@ -75,6 +88,7 @@ VAR
 	
 	--keeps track of max allowed green time
 	timer : 0..max_green_time;
+
 	--if a car is in the middle of the intersection
 	car_in_box : boolean;
 	
@@ -87,6 +101,7 @@ VAR
 	sensor3 : sensor(light3);
 
 ASSIGN
+
 	--car in box is assumed to be true after a light is green and cars are waiting at that light
 	init (car_in_box) := FALSE;
 	next (car_in_box) := case
@@ -104,8 +119,6 @@ ASSIGN
 		TRUE : timer;
 	esac;
 
-
-
 	-- if timer is up and cars waiting at other lights, signal to turn red
 	init (signal[1]) := TRUE;
 	next (signal[1]) := case
@@ -115,8 +128,8 @@ ASSIGN
 		!light2.red & light2.yellow & light1.red & !(sensor3.queue > 0) & sensor1.queue > 0: TRUE;
 		TRUE: signal[1];
 	esac;
-	--Same for others, goes cyclical (1  2  3) unless a light has no cars waiting, then it is skipped until cars ARE waiting.
 
+	--Same for others, goes cyclical (1  2  3) unless a light has no cars waiting, then it is skipped until cars ARE waiting.
 	init (signal[2]) := FALSE;
 	next (signal[2]) := case	
 		light2.green & next(timer) = 0 & (sensor1.queue > 0| sensor3.queue > 0) : FALSE;
@@ -135,70 +148,36 @@ ASSIGN
 
 DEFINE
 
+	-- The maximum time of a green light (if others are waiting) is 3 steps
 	max_green_time := 3;
-	not_all_red := count(!light1.red, !light2.red, !light3.red)>0;
-	all_red := count(light1.red, light2.red, light3.red) = 3;
-	num_of_not_red := count(!light1.red, !light2.red, !light3.red);
-	--Others waiting means a light is green and the other sensors detect cars.
+
+	-- Shorthand for useful properties
+	not_all_red := count(!light1.red, !light2.red, !light3.red)>0; --bool
+	all_red := count(light1.red, light2.red, light3.red) = 3; --bool
+	one_green := count(light1.green, light2.green, light3.green) = 1; --bool
+	num_of_not_red := count(!light1.red, !light2.red, !light3.red); --int
+
+	-- Others waiting means a light is green and the other sensors detect cars.
 	others_waiting := (light1.green & (sensor2.queue > 0 | sensor3.queue > 0)) | (light2.green & (sensor1.queue > 0 | sensor3.queue > 0)) | (light3.green & (sensor1.queue > 0 | sensor2.queue > 0));
-	one_green := count(light1.green, light2.green, light3.green) = 1;
 
-
-
-LTLSPEC
-	G(light1.green | light1.yellow -> light2.red )
-LTLSPEC
-	G(light2.green | light2.yellow -> light1.red)
-
-LTLSPEC
-	G(!(light1.green & light1.red) & !(light1.green & light1.yellow));
-
-LTLSPEC
-	G(light1.red & !light1.yellow -> X(light1.red & light1.yellow) | X(light1.red));
-
-LTLSPEC
-	G(light1.red & light1.yellow -> X(light1.green));
-
-CTLSPEC
-	AG(light1.green -> EF (light1.yellow));
-
-LTLSPEC
-	G(light1.green & !signal[1] -> X(light1.yellow));
-
-LTLSPEC
-	G(light1.yellow & !light1.red -> X(light1.red & !light1.yellow));
 
 -- At most one traffic light is not red
 LTLSPEC
 	G(num_of_not_red<=1)
 
--- Eventually, waiting drivers will get a green light
-LTLSPEC
-	G(sensor1.queue > 0 & light1.red -> F(light1.green))
-
-LTLSPEC
-	G(sensor2.queue > 0 & light2.red -> F(light2.green))
-
-LTLSPEC
-	G(sensor3.queue > 0 & light3.red -> F(light3.green))
-
 -- Between green lights, all light have to be red for at least one turn
 LTLSPEC
 	G ((light1.yellow & !light1.red) | (light2.yellow & !light2.red) | (light3.yellow & !light3.red) -> X(light1.red & light2.red & light3.red))
 
--- (same v)
+-- This spec and the one above fullfills 2.3.M2 and 2.3.O1 together.
 LTLSPEC
-	G (not_all_red & num_of_not_red = 1 -> X(all_red) | X(num_of_not_red = 1))
-
--- Every time a light goes back to red, there is a turn where all lights are red
-LTLSPEC
-	G(not_all_red -> X(all_red) | X(not_all_red))
+	G (num_of_not_red = 1 -> X(all_red) | X(num_of_not_red = 1))
 
 -- If timer is 0 and people were already waiting at the other lights, the current green light swithces to red in 2 turns.
 LTLSPEC
 	G((timer = 0 & Y(others_waiting)) -> X(X(all_red)))
 
---
+-- Keep the green light on if there are no cars waiting at the other lights
 LTLSPEC
 	G(!others_waiting & one_green -> X(one_green))
 
@@ -206,8 +185,9 @@ LTLSPEC
 LTLSPEC
 	G (light1.green -> F(timer = 0 U others_waiting) | F(light1.red))
 
--- MORE LTL-/CTL-SPECS TO BE ADDED!
+-- Our LTL-/CTL-SPECS should fullfill all criterion
 
+-- ERROR TRACES:
 
 
 
