@@ -1,12 +1,13 @@
 MODULE trafficLight(signal, car_in_box)
 VAR
-	--state : {green, yellow, red};
+	-- Three lights treated as booleans
 	red : boolean;
 	yellow : boolean;
 	green : boolean;
 
 
 ASSIGN
+	--red until signaled to become green, then not red the turn after yellow is on. turns red after single yellow
 	init(red) := TRUE;
 	next(red) := case
 		red & yellow : FALSE;
@@ -14,6 +15,7 @@ ASSIGN
 		yellow : TRUE;
 		TRUE : red;
 	esac;
+	--yellow after single green and signal for going red
 
 	init(yellow) := FALSE;
 	next(yellow) := case
@@ -23,7 +25,7 @@ ASSIGN
 		!signal & green : TRUE;
 		TRUE : yellow;
 	esac;
-
+	--green after red & yellow
 	init(green) := FALSE;
 	next(green) := case
 		red & yellow : TRUE;
@@ -43,49 +45,49 @@ LTLSPEC
 	G(yellow & red -> X(green))
 
 MODULE sensor(light)
-VAR
-	--on : boolean;
-	queue : 0..max_queue;
-	--queueCheck : 0..max_queue;
 
-ASSIGN
-	init (queue) := 0;
-	next (queue) := case
-		queue = 0 : {1, 0};
-		(light.green | (!light.red & light.yellow)) & queue > 0 & queue < max_queue : {queue - 1, queue, queue + 1};
-		(light.green | (!light.red & light.yellow)) & queue > 0 : {queue - 1, queue};
-		light.red & queue < max_queue : {queue + 1, queue};
-		TRUE : queue;
-	esac;
-
-	--init (queueCheck) := 0;
-	--next (queueCheck) := queue;
-
-	--init (on) := queue > 0;
-	--next (on) := queue > 0;
-
-
+--max cars in queue
 DEFINE
 	max_queue := 5;
 
+VAR
+	queue : 0..max_queue;
+	
+
+ASSIGN
+	init (queue) := 0..5; --initialize queue to anything
+	next (queue) := case
+		queue = 0 : {1, 0}; --car can show up or not |||||  if it's green, cars "MAY" drive and cars may show up.
+		(light.green | (!light.red & light.yellow)) & queue > 0 & queue < max_queue : {queue - 1, queue, queue + 1};
+		(light.green | (!light.red & light.yellow)) & queue > 0 : {queue - 1, queue};
+		light.red & queue < max_queue : {queue + 1, queue}; --cars can arrive at red until queue is full
+		TRUE : queue;
+	esac;
+
+FAIRNESS
+	queue > 0; -- Each queue is populated infinitely often
+
+
 MODULE main
 VAR
+	--signal variable signals to trafficlight to allow transition to green.
 	signal : array 1..3 of boolean;
-	--sensor : array 1..3 of 0..5;
+	
+	--keeps track of max allowed green time
 	timer : 0..max_green_time;
+	--if a car is in the middle of the intersection
 	car_in_box : boolean;
-
+	
+	--lights with corresponding sensors
 	light1 : trafficLight(signal[1], car_in_box);
 	sensor1 : sensor(light1);
-
 	light2 : trafficLight(signal[2], car_in_box);
 	sensor2 : sensor(light2);
-
 	light3 : trafficLight(signal[3], car_in_box);
 	sensor3 : sensor(light3);
 
 ASSIGN
-
+	--car in box is assumed to be true after a light is green and cars are waiting at that light
 	init (car_in_box) := FALSE;
 	next (car_in_box) := case
 		(light1.green | (!light1.red & light1.yellow)) & sensor1.queue > 0 : TRUE;
@@ -94,6 +96,7 @@ ASSIGN
 		TRUE : FALSE;
 	esac;
 
+	--decrement timer while anything is green
 	init (timer) := max_green_time;
 	next (timer) := case
 		(light1.green | light2.green | light3.green) & timer > 0 : timer - 1;
@@ -101,14 +104,18 @@ ASSIGN
 		TRUE : timer;
 	esac;
 
+
+
+	-- if timer is up and cars waiting at other lights, signal to turn red
 	init (signal[1]) := TRUE;
 	next (signal[1]) := case
 		light1.green & next(timer) = 0 & (sensor2.queue > 0 | sensor3.queue > 0): FALSE;
-		!light3.red & light3.yellow & light1.red & sensor1.queue > 0 : TRUE;
+		!light3.red & light3.yellow & light1.red & sensor1.queue > 0 : TRUE; --1's turn after 3 if cars are waiting at 1
+		-- Also 1's turn after 2 if light 3 has no cars waiting.
 		!light2.red & light2.yellow & light1.red & !(sensor3.queue > 0) & sensor1.queue > 0: TRUE;
 		TRUE: signal[1];
 	esac;
-
+	--Same for others, goes cyclical (1  2  3) unless a light has no cars waiting, then it is skipped until cars ARE waiting.
 
 	init (signal[2]) := FALSE;
 	next (signal[2]) := case	
@@ -127,23 +134,21 @@ ASSIGN
 	esac;
 
 DEFINE
+
 	max_green_time := 3;
 	not_all_red := count(!light1.red, !light2.red, !light3.red)>0;
 	all_red := count(light1.red, light2.red, light3.red) = 3;
 	num_of_not_red := count(!light1.red, !light2.red, !light3.red);
+	--Others waiting means a light is green and the other sensors detect cars.
 	others_waiting := (light1.green & (sensor2.queue > 0 | sensor3.queue > 0)) | (light2.green & (sensor1.queue > 0 | sensor3.queue > 0)) | (light3.green & (sensor1.queue > 0 | sensor2.queue > 0));
 	one_green := count(light1.green, light2.green, light3.green) = 1;
 
-FAIRNESS
-	others_waiting;
 
 
 LTLSPEC
 	G(light1.green | light1.yellow -> light2.red )
 LTLSPEC
 	G(light2.green | light2.yellow -> light1.red)
-
-
 
 LTLSPEC
 	G(!(light1.green & light1.red) & !(light1.green & light1.yellow));
